@@ -1,9 +1,3 @@
-#!/usr/bin/env python3
-"""
-图片查看器 - 主应用程序入口
-支持PNG格式，多文件实现，多文件夹存储
-"""
-
 import sys
 import os
 from PySide6.QtWidgets import QApplication

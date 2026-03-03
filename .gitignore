@@ -3,3 +3,4 @@
 build.bat
 /inscript
 /installer
+/ui/__pycache__
