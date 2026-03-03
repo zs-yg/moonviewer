@@ -1,3 +1,5 @@
-/deployment
-/pysidedeploy.spec
+/dist
 /__pycache__
+build.bat
+/inscript
+/installer
