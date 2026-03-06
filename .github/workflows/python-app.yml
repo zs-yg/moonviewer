@@ -38,5 +38,5 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: moonviewer-executable
-        path: dist/MoonViewer.exe
+        path: dist/
         if-no-files-found: error
