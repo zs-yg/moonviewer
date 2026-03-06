@@ -167,6 +167,15 @@ class ImageViewer(UIMainWindow):
             if image.isNull():
                 QMessageBox.warning(self, "错误", f"无法加载图片: {file_path}")
                 return
+            
+            # 如果文件不在image_files列表中，则添加它（用于命令行拖放支持）
+            if file_path not in self.image_files:
+                self.image_files.append(file_path)
+                # 同时添加到文件模型，以便在文件列表中显示
+                file_name = os.path.basename(file_path)
+                item = QStandardItem(file_name)
+                item.setData(file_path, Qt.UserRole)
+                self.file_model.appendRow(item)
                 
             # 显示图片
             pixmap = QPixmap.fromImage(image)
