@@ -12,7 +12,7 @@ permissions:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
     - uses: actions/checkout@v4
@@ -41,7 +41,5 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: moonviewer-executable
-        path: |
-          main.bin
-          main.dist/
+        path: dist/MoonViewer.exe
         if-no-files-found: error
