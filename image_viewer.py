@@ -19,14 +19,18 @@ class PreloadWorker(QRunnable):
         
     def run(self):
         """在工作线程中预加载图片到缓存"""
+        import time
         for i in range(self.start_index, len(self.file_paths)):
             try:
-                # 预加载到缓存，不进行显示
-                self.image_loader.load_as_qpixmap(
+                # 预加载到缓存，只加载为数组，不转换为QPixmap以减少开销
+                self.image_loader.load_as_array(
                     self.file_paths[i],
                     preserve_alpha=True,
                     use_cache=True
                 )
+                # 每加载5张图片后稍微休息，让出CPU时间
+                if (i - self.start_index) % 5 == 0:
+                    time.sleep(0.01)
             except Exception:
                 # 忽略加载错误，继续预加载其他图片
                 pass
@@ -233,8 +237,24 @@ class ImageViewer(UIMainWindow):
             file_name = os.path.basename(file_path)
             self.statusBar().showMessage(f"已加载: {file_name}")
             
+            # 更新文件列表选中状态
+            self.update_file_list_selection(file_path)
+            
         except Exception as e:
             QMessageBox.critical(self, "错误", f"加载图片时出错: {str(e)}")
+            
+    def update_file_list_selection(self, file_path):
+        """更新文件列表选中状态到指定文件"""
+        # 在file_model中查找匹配的文件路径
+        for row in range(self.file_model.rowCount()):
+            index = self.file_model.index(row, 0)
+            item_file_path = self.file_model.data(index, Qt.UserRole)
+            if item_file_path == file_path:
+                # 设置选中状态
+                self.file_list.setCurrentIndex(index)
+                # 滚动到选中项
+                self.file_list.scrollTo(index)
+                break
             
     def display_image(self, pixmap):
         """显示图片到标签"""
