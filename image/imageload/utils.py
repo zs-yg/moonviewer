@@ -80,28 +80,28 @@ def convert_to_qimage(numpy_array: np.ndarray) -> QImage:
     if channels not in (3, 4):
         raise ValueError(f"期望3或4通道，得到 {channels} 通道")
     
-    # 确保数据类型为uint8
+    # 确保数据类型为uint8且内存连续
     if numpy_array.dtype != np.uint8:
         numpy_array = numpy_array.astype(np.uint8)
     
+    # 确保数组在内存中是连续的
+    numpy_array = np.ascontiguousarray(numpy_array)
+    
     # 根据通道数设置QImage格式
     if channels == 3:
-        # RGB格式
+        # RGB格式，每个通道8位
         qimage_format = QImage.Format_RGB888
-        # 需要将RGB转换为BGR供QImage使用
-        numpy_array = numpy_array[:, :, ::-1].copy()  # RGB -> BGR
     else:  # channels == 4
-        # RGBA格式
+        # RGBA格式，每个通道8位
         qimage_format = QImage.Format_RGBA8888
-        # 需要将RGBA转换为BGRA供QImage使用
-        numpy_array = numpy_array[:, :, [2, 1, 0, 3]].copy()  # RGBA -> BGRA
     
     # 创建QImage
+    # 注意：QImage不会复制数据，所以需要保持numpy_array的引用
     qimage = QImage(
         numpy_array.data,
         width,
         height,
-        width * channels,
+        width * channels,  # 每行的字节数
         qimage_format
     )
     

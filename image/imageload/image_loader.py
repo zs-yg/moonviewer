@@ -48,6 +48,7 @@ class ImageLoader:
         target_size: Optional[Tuple[int, int]] = None,
         resize_method: str = 'bilinear',
         convert_to_rgb: bool = True,
+        preserve_alpha: bool = True,
         use_cache: bool = True
     ) -> np.ndarray:
         """
@@ -58,6 +59,7 @@ class ImageLoader:
             target_size: 目标尺寸 (width, height)，如果为None则保持原尺寸
             resize_method: 缩放方法，'nearest' 或 'bilinear'
             convert_to_rgb: 是否转换为RGB格式
+            preserve_alpha: 是否保留alpha通道（对于有透明度的图片）
             use_cache: 是否使用缓存
             
         Returns:
@@ -82,7 +84,8 @@ class ImageLoader:
         cache_key_kwargs = {
             'target_size': target_size,
             'resize_method': resize_method,
-            'convert_to_rgb': convert_to_rgb
+            'convert_to_rgb': convert_to_rgb,
+            'preserve_alpha': preserve_alpha
         }
         
         # 尝试从缓存获取
@@ -95,13 +98,22 @@ class ImageLoader:
             # 使用Pillow加载图片
             pil_image = load_pil_image(file_path)
             
-            # 转换为RGB（如果需要）
+            # 检查图片是否有透明度
+            has_alpha = 'transparency' in pil_image.info or pil_image.mode in ('RGBA', 'LA', 'PA')
+            
+            # 转换图片模式
             if convert_to_rgb:
-                if pil_image.mode == 'RGBA':
-                    # 保持RGBA格式
-                    pass
-                elif pil_image.mode != 'RGB':
-                    pil_image = pil_image.convert('RGB')
+                if preserve_alpha and has_alpha:
+                    # 有透明度且需要保留，转换为RGBA
+                    if pil_image.mode != 'RGBA':
+                        pil_image = pil_image.convert('RGBA')
+                else:
+                    # 无透明度或不需要保留，转换为RGB
+                    if pil_image.mode == 'RGBA':
+                        # RGBA转换为RGB（丢弃alpha通道）
+                        pil_image = pil_image.convert('RGB')
+                    elif pil_image.mode != 'RGB':
+                        pil_image = pil_image.convert('RGB')
             
             # 转换为numpy数组
             image_array = np.array(pil_image)
@@ -125,6 +137,7 @@ class ImageLoader:
         target_size: Optional[Tuple[int, int]] = None,
         resize_method: str = 'bilinear',
         convert_to_rgb: bool = True,
+        preserve_alpha: bool = True,
         use_cache: bool = True
     ) -> 'QImage':
         """
@@ -135,6 +148,7 @@ class ImageLoader:
             target_size: 目标尺寸 (width, height)
             resize_method: 缩放方法
             convert_to_rgb: 是否转换为RGB格式
+            preserve_alpha: 是否保留alpha通道
             use_cache: 是否使用缓存
             
         Returns:
@@ -142,7 +156,7 @@ class ImageLoader:
         """
         # 加载为numpy数组
         image_array = self.load_as_array(
-            file_path, target_size, resize_method, convert_to_rgb, use_cache
+            file_path, target_size, resize_method, convert_to_rgb, preserve_alpha, use_cache
         )
         
         # 转换为QImage
@@ -154,6 +168,7 @@ class ImageLoader:
         target_size: Optional[Tuple[int, int]] = None,
         resize_method: str = 'bilinear',
         convert_to_rgb: bool = True,
+        preserve_alpha: bool = True,
         use_cache: bool = True
     ) -> 'QPixmap':
         """
@@ -164,6 +179,7 @@ class ImageLoader:
             target_size: 目标尺寸 (width, height)
             resize_method: 缩放方法
             convert_to_rgb: 是否转换为RGB格式
+            preserve_alpha: 是否保留alpha通道
             use_cache: 是否使用缓存
             
         Returns:
@@ -171,7 +187,7 @@ class ImageLoader:
         """
         # 加载为numpy数组
         image_array = self.load_as_array(
-            file_path, target_size, resize_method, convert_to_rgb, use_cache
+            file_path, target_size, resize_method, convert_to_rgb, preserve_alpha, use_cache
         )
         
         # 转换为QPixmap

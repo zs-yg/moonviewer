@@ -1,10 +1,35 @@
 import os
+import threading
 from pathlib import Path
 from PySide6.QtWidgets import QFileDialog, QMessageBox
-from PySide6.QtCore import Qt, QFileInfo, QStandardPaths
+from PySide6.QtCore import Qt, QFileInfo, QStandardPaths, QThreadPool, QRunnable
 from PySide6.QtGui import QPixmap, QImage, QImageReader, QStandardItem
 from ui.main_window import UIMainWindow
 from image.imageload import ImageLoader
+
+
+class PreloadWorker(QRunnable):
+    """预加载图片的工作线程"""
+    
+    def __init__(self, image_loader, file_paths, start_index=1):
+        super().__init__()
+        self.image_loader = image_loader
+        self.file_paths = file_paths
+        self.start_index = start_index
+        
+    def run(self):
+        """在工作线程中预加载图片到缓存"""
+        for i in range(self.start_index, len(self.file_paths)):
+            try:
+                # 预加载到缓存，不进行显示
+                self.image_loader.load_as_qpixmap(
+                    self.file_paths[i],
+                    preserve_alpha=True,
+                    use_cache=True
+                )
+            except Exception:
+                # 忽略加载错误，继续预加载其他图片
+                pass
 
 
 class ImageViewer(UIMainWindow):
@@ -13,7 +38,11 @@ class ImageViewer(UIMainWindow):
     def __init__(self):
         super().__init__()
         self.image_loader = ImageLoader()
+        self.thread_pool = QThreadPool()
+        # 设置最大线程数，避免创建过多线程
+        self.thread_pool.setMaxThreadCount(2)
         self.setup_connections()
+        
         
     def setup_connections(self):
         """设置信号和槽连接"""
@@ -135,6 +164,16 @@ class ImageViewer(UIMainWindow):
                 # 选择第一个文件
                 if self.file_model.rowCount() > 0:
                     self.file_list.setCurrentIndex(self.file_model.index(0, 0))
+                
+                # 如果有多张图片，启动预加载线程
+                if len(self.image_files) > 1:
+                    worker = PreloadWorker(
+                        self.image_loader,
+                        self.image_files,
+                        start_index=1  # 从第二张图片开始预加载
+                    )
+                    self.thread_pool.start(worker)
+                    self.statusBar().showMessage(f"找到 {len(self.image_files)} 张图片，正在预加载...")
             else:
                 self.statusBar().showMessage("文件夹中没有找到图片文件")
                 
@@ -300,27 +339,15 @@ class ImageViewer(UIMainWindow):
     def reset_zoom(self):
         """重置缩放"""
         if self.current_image_path and os.path.exists(self.current_image_path):
-            try:
-                pixmap = self.image_loader.load_as_qpixmap(self.current_image_path)
-                if not pixmap.isNull():
-                    self.display_image(pixmap)
-            except Exception:
-                # 如果ImageLoader失败，回退到原始方法
-                pixmap = QPixmap(self.current_image_path)
-                if not pixmap.isNull():
-                    self.display_image(pixmap)
+            pixmap = self.image_loader.load_as_qpixmap(self.current_image_path)
+            if not pixmap.isNull():
+                self.display_image(pixmap)
                 
     def resizeEvent(self, event):
         """窗口大小变化事件"""
         super().resizeEvent(event)
         # 重新调整图片大小
         if self.current_image_path and os.path.exists(self.current_image_path):
-            try:
-                pixmap = self.image_loader.load_as_qpixmap(self.current_image_path)
-                if not pixmap.isNull():
-                    self.display_image(pixmap)
-            except Exception:
-                # 如果ImageLoader失败，回退到原始方法
-                pixmap = QPixmap(self.current_image_path)
-                if not pixmap.isNull():
-                    self.display_image(pixmap)
+            pixmap = self.image_loader.load_as_qpixmap(self.current_image_path)
+            if not pixmap.isNull():
+                self.display_image(pixmap)
