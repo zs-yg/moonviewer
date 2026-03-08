@@ -4,6 +4,7 @@ from PySide6.QtWidgets import QFileDialog, QMessageBox
 from PySide6.QtCore import Qt, QFileInfo, QStandardPaths
 from PySide6.QtGui import QPixmap, QImage, QImageReader, QStandardItem
 from ui.main_window import UIMainWindow
+from image.imageload import ImageLoader
 
 
 class ImageViewer(UIMainWindow):
@@ -11,6 +12,7 @@ class ImageViewer(UIMainWindow):
     
     def __init__(self):
         super().__init__()
+        self.image_loader = ImageLoader()
         self.setup_connections()
         
     def setup_connections(self):
@@ -156,15 +158,9 @@ class ImageViewer(UIMainWindow):
                 QMessageBox.warning(self, "错误", f"文件不存在: {file_path}")
                 return
                 
-            # 使用QImageReader检查图片格式
-            reader = QImageReader(file_path)
-            if not reader.canRead():
-                QMessageBox.warning(self, "错误", f"无法读取图片文件: {file_path}")
-                return
-                
-            # 加载图片
-            image = QImage(file_path)
-            if image.isNull():
+            # 使用ImageLoader加载图片
+            pixmap = self.image_loader.load_as_qpixmap(file_path)
+            if pixmap.isNull():
                 QMessageBox.warning(self, "错误", f"无法加载图片: {file_path}")
                 return
             
@@ -178,14 +174,14 @@ class ImageViewer(UIMainWindow):
                 self.file_model.appendRow(item)
                 
             # 显示图片
-            pixmap = QPixmap.fromImage(image)
             self.display_image(pixmap)
             
             # 更新当前图片信息
             self.current_image_path = file_path
             self.current_image_index = self.get_current_file_index()
             
-            # 更新图片信息
+            # 更新图片信息（从pixmap获取QImage）
+            image = pixmap.toImage()
             self.update_image_info(image, file_path)
             
             # 更新缩略图
@@ -304,15 +300,27 @@ class ImageViewer(UIMainWindow):
     def reset_zoom(self):
         """重置缩放"""
         if self.current_image_path and os.path.exists(self.current_image_path):
-            pixmap = QPixmap(self.current_image_path)
-            if not pixmap.isNull():
-                self.display_image(pixmap)
+            try:
+                pixmap = self.image_loader.load_as_qpixmap(self.current_image_path)
+                if not pixmap.isNull():
+                    self.display_image(pixmap)
+            except Exception:
+                # 如果ImageLoader失败，回退到原始方法
+                pixmap = QPixmap(self.current_image_path)
+                if not pixmap.isNull():
+                    self.display_image(pixmap)
                 
     def resizeEvent(self, event):
         """窗口大小变化事件"""
         super().resizeEvent(event)
         # 重新调整图片大小
         if self.current_image_path and os.path.exists(self.current_image_path):
-            pixmap = QPixmap(self.current_image_path)
-            if not pixmap.isNull():
-                self.display_image(pixmap)
+            try:
+                pixmap = self.image_loader.load_as_qpixmap(self.current_image_path)
+                if not pixmap.isNull():
+                    self.display_image(pixmap)
+            except Exception:
+                # 如果ImageLoader失败，回退到原始方法
+                pixmap = QPixmap(self.current_image_path)
+                if not pixmap.isNull():
+                    self.display_image(pixmap)

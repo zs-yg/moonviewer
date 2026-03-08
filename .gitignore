@@ -4,3 +4,4 @@ build.bat
 /inscript
 /installer
 /ui/__pycache__
+/image/imageload/__pycache__
