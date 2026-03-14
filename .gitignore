@@ -5,3 +5,4 @@ build.bat
 /installer
 /ui/__pycache__
 /image/imageload/__pycache__
+changelist.txt

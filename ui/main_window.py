@@ -1,3 +1,4 @@
+import os
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter,
     QLabel, QPushButton, QTreeView, QListView,
@@ -36,6 +37,10 @@ class UIMainWindow(QMainWindow):
     def init_ui(self):
         """初始化用户界面"""
         self.setWindowTitle("图片查看器")
+        # 设置窗口图标
+        icon_path = os.path.join(os.path.dirname(__file__), "..", "icon.ico")
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
         self.setGeometry(100, 100, 1200, 800)
         
         # 设置应用程序样式

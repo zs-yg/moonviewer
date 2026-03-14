@@ -9,8 +9,8 @@ def main():
     """应用程序主函数"""
     # 创建应用程序实例
     app = QApplication(sys.argv)
-    app.setApplicationName("图片查看器")
-    app.setOrganizationName("ImageViewer")
+    app.setApplicationName("MoonViewer")
+    app.setOrganizationName("MoonViewer")
     
     # 创建主窗口
     window = ImageViewer()
